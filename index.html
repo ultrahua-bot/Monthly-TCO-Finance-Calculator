@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-9">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monthly TCO & Finance Calculator</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,10 +20,10 @@
 
     <script type="text/babel">
         function App() {
-            // 📌 จุดที่ 1: ตั้งค่าเริ่มต้น (Default Values) ดึงมาจากไฟล์ Excel SCG
+            // 📌 จุดที่ 1: ตั้งค่าเริ่มต้น (Default Values)
             const [inputs, setInputs] = React.useState({
                 // ข้อมูลการวิ่งทั่วไป
-                kmPerDay: 100,
+                kmPerDay: 100, // อัปเดตค่าเริ่มต้นเป็น 100 ตามที่คุณต้องการ
                 daysPerMonth: 26,
                 
                 // ฝั่งรถน้ำมัน (ดีเซล) - อ้างอิง Hino/Isuzu
@@ -31,65 +31,57 @@
                 dieselDownPct: 10,
                 dieselInterestRate: 3.5,
                 dieselTerms: 60,
-                dieselConsumption: 3.0, // km/L (เทียบเท่า 0.33 L/km)
-                dieselFuelPrice: 39, // THB/L
+                dieselConsumption: 2.2, 
+                dieselFuelPrice: 39, 
                 dieselInsuranceYear: 80000,
                 dieselMaintYear: 100000,
 
-                // ฝั่งรถไฟฟ้า (EV) - อ้างอิง Foton E-mixer
-                evPrice: 4000000,
+                // ฝั่งรถไฟฟ้า (EV) - อ้างอิง Sany 423Kw
+                evPrice: 3900000,
                 evDownPct: 15,
                 evInterestRate: 3.5,
                 evTerms: 60,
-                evConsumption: 1.5, // kWh/km
-                evElectricityPrice: 5.0, // THB/kWh
+                evConsumption: 1.50, 
+                evElectricityPrice: 5.0, 
                 evInsuranceYear: 120000,
                 evMaintYear: 50000,
             });
 
             const [results, setResults] = React.useState({
                 monthlyKm: 0,
-                
-                // ดีเซล
                 dieselDownPayment: 0,
                 dieselFinanceAmt: 0,
                 dieselInstallment: 0,
                 dieselEnergyCost: 0,
                 dieselTotalMonthly: 0,
-                
-                // EV
                 evDownPayment: 0,
                 evFinanceAmt: 0,
                 evInstallment: 0,
                 evEnergyCost: 0,
                 evTotalMonthly: 0,
-
-                // สรุป
                 savingPerMonth: 0,
             });
 
             React.useEffect(() => {
                 const calc = () => {
-                    // 1. ระยะทางรวมต่อเดือน
                     const monthlyKm = inputs.kmPerDay * inputs.daysPerMonth;
 
-                    // --- คำนวณฝั่งรถดีเซล ---
+                    // ดีเซล
                     const dDown = inputs.dieselPrice * (inputs.dieselDownPct / 100);
                     const dFinance = inputs.dieselPrice - dDown;
                     const dInterestTotal = dFinance * (inputs.dieselInterestRate / 100) * (inputs.dieselTerms / 12);
-                    const dInstallment = (dFinance + dInterestTotal) / inputs.dieselTerms;
-                    const dEnergyCost = (monthlyKm / inputs.dieselConsumption) * inputs.dieselFuelPrice;
+                    const dInstallment = inputs.dieselTerms > 0 ? (dFinance + dInterestTotal) / inputs.dieselTerms : 0;
+                    const dEnergyCost = inputs.dieselConsumption > 0 ? (monthlyKm / inputs.dieselConsumption) * inputs.dieselFuelPrice : 0;
                     const dTotalMonthly = dInstallment + dEnergyCost + (inputs.dieselInsuranceYear / 12) + (inputs.dieselMaintYear / 12);
 
-                    // --- คำนวณฝั่งรถ EV ---
+                    // EV
                     const eDown = inputs.evPrice * (inputs.evDownPct / 100);
                     const eFinance = inputs.evPrice - eDown;
                     const eInterestTotal = eFinance * (inputs.evInterestRate / 100) * (inputs.evTerms / 12);
-                    const eInstallment = (eFinance + eInterestTotal) / inputs.evTerms;
+                    const eInstallment = inputs.evTerms > 0 ? (eFinance + eInterestTotal) / inputs.evTerms : 0;
                     const eEnergyCost = (monthlyKm * inputs.evConsumption) * inputs.evElectricityPrice;
                     const eTotalMonthly = eInstallment + eEnergyCost + (inputs.evInsuranceYear / 12) + (inputs.evMaintYear / 12);
 
-                    // อัปเดตผลลัพธ์
                     setResults({
                         monthlyKm,
                         dieselDownPayment: dDown,
@@ -97,13 +89,11 @@
                         dieselInstallment: dInstallment,
                         dieselEnergyCost: dEnergyCost,
                         dieselTotalMonthly: dTotalMonthly,
-                        
                         evDownPayment: eDown,
                         evFinanceAmt: eFinance,
                         evInstallment: eInstallment,
                         evEnergyCost: eEnergyCost,
                         evTotalMonthly: eTotalMonthly,
-
                         savingPerMonth: dTotalMonthly - eTotalMonthly
                     });
                 };
@@ -111,7 +101,9 @@
             }, [inputs]);
 
             React.useEffect(() => {
-                lucide.createIcons();
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
             });
 
             const handleChange = (e) => {
@@ -123,13 +115,11 @@
             };
 
             const formatMoney = (val) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(val);
-            const formatDec = (val) => new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(val);
 
             return (
                 <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto">
                         
-                        {/* Header */}
                         <div className="text-center mb-10">
                             <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-3">
                                 EV Truck: Monthly Cash Flow Calculator
@@ -141,10 +131,8 @@
 
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                             
-                            {/* --- ฝั่งซ้าย: ข้อมูล Input --- */}
                             <div className="lg:col-span-5 space-y-6 overflow-y-auto hide-scroll" style={{maxHeight: '85vh'}}>
                                 
-                                {/* 1. ข้อมูลการวิ่ง */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                                     <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
                                         <i data-lucide="route" className="w-5 h-5 mr-2 text-blue-600"></i> ข้อมูลปฏิบัติงาน (Operations)
@@ -164,7 +152,6 @@
                                     </div>
                                 </div>
 
-                                {/* 2. รถดีเซล */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                                     <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
                                         <i data-lucide="fuel" className="w-5 h-5 mr-2 text-orange-600"></i> รถบรรทุกเครื่องยนต์ดีเซล (ICE)
@@ -201,7 +188,6 @@
                                     </div>
                                 </div>
 
-                                {/* 3. รถไฟฟ้า */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 border-b-4 border-b-green-500">
                                     <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
                                         <i data-lucide="zap" className="w-5 h-5 mr-2 text-green-600"></i> รถบรรทุกไฟฟ้า (EV Truck)
@@ -239,10 +225,8 @@
                                 </div>
                             </div>
 
-                            {/* --- ฝั่งขวา: ผลลัพธ์ Dashboard --- */}
                             <div className="lg:col-span-7 space-y-6">
                                 
-                                {/* กล่องสรุปผลประหยัดรวม */}
                                 <div className={`rounded-2xl shadow-lg p-6 relative overflow-hidden ${results.savingPerMonth > 0 ? 'bg-gradient-to-r from-emerald-600 to-green-800' : 'bg-gradient-to-r from-slate-700 to-slate-900'} text-white`}>
                                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
                                         <div>
@@ -260,10 +244,8 @@
                                             <p className="text-2xl font-bold text-white">฿ {formatMoney(Math.abs(results.savingPerMonth * 12))}</p>
                                         </div>
                                     </div>
-                                    <div className="absolute right-0 top-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/4"></div>
                                 </div>
 
-                                {/* ตารางเปรียบเทียบ Cash Flow แบบเจาะลึก */}
                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                                     <div className="bg-slate-50 border-b border-slate-200 px-6 py-4">
                                         <h3 className="text-lg font-bold text-slate-800">วิเคราะห์กระแสเงินสดรายเดือน (Monthly Cash Flow)</h3>
@@ -280,7 +262,6 @@
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 
-                                                {/* ส่วนไฟแนนซ์ */}
                                                 <tr>
                                                     <td className="p-4">
                                                         <div className="font-semibold text-slate-800">1. ค่างวดผ่อนรถ (Installment)</div>
@@ -290,7 +271,6 @@
                                                     <td className="p-4 text-right font-medium text-slate-700 bg-green-50/10">฿ {formatMoney(results.evInstallment)}</td>
                                                 </tr>
 
-                                                {/* ส่วนพลังงาน */}
                                                 <tr>
                                                     <td className="p-4">
                                                         <div className="font-semibold text-slate-800">2. ค่าพลังงาน (Energy Cost)</div>
@@ -300,17 +280,15 @@
                                                     <td className="p-4 text-right font-medium text-emerald-600 bg-green-50/10">฿ {formatMoney(results.evEnergyCost)}</td>
                                                 </tr>
 
-                                                {/* ส่วนซ่อมบำรุง/ประกัน (หาร 12) */}
                                                 <tr>
                                                     <td className="p-4">
-                                                        <div className="font-semibold text-slate-800">3. ค่าซ่อมบำรุง & ประกันภัย (เฉลี่ยรายเดือน)</div>
+                                                        <div className="font-semibold text-slate-800">3. ค่าซ่อมบำรุง & ประกันภัย (รายเดือน)</div>
                                                         <div className="text-xs text-slate-500 mt-1">คิดเฉลี่ยจากรายจ่ายรายปี</div>
                                                     </td>
                                                     <td className="p-4 text-right text-sm text-slate-600 bg-orange-50/10">฿ {formatMoney((inputs.dieselMaintYear + inputs.dieselInsuranceYear)/12)}</td>
                                                     <td className="p-4 text-right text-sm text-slate-600 bg-green-50/10">฿ {formatMoney((inputs.evMaintYear + inputs.evInsuranceYear)/12)}</td>
                                                 </tr>
 
-                                                {/* สรุปรวมรายเดือน */}
                                                 <tr className="border-t-2 border-slate-200">
                                                     <td className="p-4">
                                                         <div className="font-bold text-slate-900 text-lg">รวมค่าใช้จ่ายเฉลี่ยต่อเดือน</div>
@@ -327,17 +305,16 @@
                                     </div>
                                 </div>
 
-                                {/* แถบข้อมูลน่ารู้ */}
                                 <div className="bg-blue-50 rounded-xl p-5 border border-blue-100 flex items-start gap-4">
                                     <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
                                         <i data-lucide="info" className="w-6 h-6"></i>
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-bold text-blue-900 mb-1">ทำไมรถ EV ถึงน่าลงทุนในแง่ Cash Flow?</h4>
+                                        <h4 className="text-sm font-bold text-blue-900 mb-1">สรุปการลงทุน (Cash Flow Analysis)</h4>
                                         <p className="text-sm text-blue-800 leading-relaxed">
-                                            แม้ค่างวดรถ EV (Installment) จะสูงกว่ารถดีเซลประมาณ <span className="font-bold">{formatMoney(results.evInstallment - results.dieselInstallment)}</span> บาท/เดือน 
-                                            แต่การที่ค่าไฟถูกกว่าค่าน้ำมันมหาศาล ทำให้ช่วยหักล้างส่วนต่างของค่างวดได้ทั้งหมด และยังเหลือเงินทอนกลับเข้ากระเป๋าบริษัทอีกเดือนละ 
-                                            <span className="font-bold text-emerald-600"> {formatMoney(results.savingPerMonth)} </span> บาท
+                                            แม้ค่างวดรถ EV (Installment) จะสูงกว่ารถดีเซลประมาณ <span className="font-bold">{formatMoney(Math.abs(results.evInstallment - results.dieselInstallment))}</span> บาท/เดือน 
+                                            แต่ส่วนต่างค่าไฟที่ถูกกว่าค่าน้ำมัน สามารถหักล้างค่างวดที่แพงกว่าได้ทั้งหมด ทำให้ประหยัดเงินได้ถึง
+                                            <span className="font-bold text-emerald-600"> {formatMoney(Math.abs(results.savingPerMonth))} </span> บาท ต่อเดือน
                                         </p>
                                     </div>
                                 </div>
